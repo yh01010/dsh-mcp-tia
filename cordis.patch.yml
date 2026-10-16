@@ -1,0 +1,63 @@
+# dsh-mcp-tia bundle patch: inserts a Siemens TIA Portal MCP client bridge into a profile's layer stack.
+#
+# Install into a profile (either command works; then restart dsh web):
+#
+#   dsh plugin --profile <name> add github:yh01010/dsh-mcp-tia
+#   dsh --profile <name> plugin add github:yh01010/dsh-mcp-tia
+#
+# or list the package in the profile's `dsh.profile.bundles` and `pnpm install`.
+#
+# Backed by the host package `@deepseek-ai/dsh-mcp-client` (already shipped with
+# dsh): one instance connects to one MCP server and registers its tools on
+# `ctx.tools` under `mcp__<serverName>__<rawName>`.
+#
+# ⚠️ INSTALLING THIS PACKAGE DOES NOT GIVE YOU WORKING TIA TOOLS.
+# Siemens ships no official MCP server for TIA Portal, and this package carries
+# no third-party binary and no personal machine paths, so `command`/`args` below
+# are placeholders. Until you point `command` at a real TIA Portal MCP server
+# executable, the bridge cannot spawn it and no `mcp__tia__*` tool is registered.
+# See "安装后还需要三步" and "后端怎么选" in README.md.
+#
+# Recommended: override this row BY ID from `$DSH_HOME/cordis.patch.yml` — a
+# non-insert entry with the same id, carrying only your real `config`. Never
+# edit this file in an installed package (reinstalls overwrite it).
+#
+# ⚠️ Do NOT `insert` a second `mcp-tia` row from the home patch while this
+# bundle is installed. Two rows sharing one id mean two mcp-client instances on
+# serverName `tia`, and the second one aborts startup with
+# `serverName "tia" is already in use by another mcp-client instance`.
+# Pick one wiring: bundled row + id override, or no bundle + home insert.
+#
+# Config reference (all per stdio transport):
+#   serverName:           tool-name namespace, must be unique per profile
+#   command:              MCP server executable (replace the placeholder!)
+#   args:                 CLI arguments for the server. `--tia-major-version 21`
+#                         below fits heilingbrunner/tiaportal-mcp and
+#                         bulaofen0036-coder/TIA_Portal_Openness_MCP; if you use
+#                         Czarnak/tia-portal-mcp instead, the command is the
+#                         `tia-mcp` global tool and the flag is
+#                         `--access-mode read-write` (or `full`).
+#   env:                  extra environment for the server process
+#   cwd:                  working directory (default "")
+#   toolCallTimeoutMs:    per-tool-call timeout, ms. A TIA Portal cold start, a
+#                         compile or a batch import easily exceeds the 60s
+#                         default, so we raise it here (default 60000).
+#   failOnStartupError:   throw if the initial connection fails (default false).
+#                         Keep it false here on purpose: with the placeholder
+#                         path above, true would abort EVERY dsh boot until the
+#                         user fills in real paths — the plugin would be
+#                         uninstallable. Enable it only after you verified your
+#                         own command and portal root.
+#   reconnect:            { enabled, initialDelayMs, maxDelayMs, maxAttempts }
+- insert:
+    - id: mcp-tia
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: tia
+        transport: stdio
+        command: 'C:\path\to\your\TiaMcpServer.exe'
+        args:
+          - '--tia-major-version'
+          - '21'
+        toolCallTimeoutMs: 180000
+        failOnStartupError: false

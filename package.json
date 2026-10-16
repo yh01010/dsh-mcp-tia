@@ -1,0 +1,25 @@
+{
+  "name": "dsh-mcp-tia",
+  "version": "0.1.0",
+  "description": "DSH plugin: bridge to a Siemens TIA Portal MCP server (TIA Portal Openness)",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "mcp",
+    "tia-portal",
+    "siemens",
+    "plc",
+    "openness",
+    "scl",
+    "lad"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "cordis.patch.yml",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "private": true
+}
