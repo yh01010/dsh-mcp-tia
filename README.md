@@ -45,7 +45,7 @@
 
 选择建议：
 
-- **要写 SCL/LAD 代码**（本插件的主要用途）→ heilingbrunner（能读写真·文本格式，见 [能写梯形图吗](#能写梯形图吗)）或 bulaofen（自带 SCL/LAD 指令库与模板，中文文档）。
+- **要写 SCL/LAD 代码**（本插件的主要用途）→ heilingbrunner（能读写真·文本格式，见 [能写梯形图吗](#能写梯形图吗lad梯形图)）或 bulaofen（自带 SCL/LAD 指令库与模板，中文文档）。
 - **只要小而安全的工具面** → Czarnak（工具最少、写操作有 `dryRun` 与内容哈希守卫、带审计日志），但只支持 V21。
 - **想少编译、拿现成 exe** → bulaofen 的 Release 包里是预编译运行时；它的 `配置MCP.bat` 只认 Claude/Cursor/VS Code，**不认 DSH**，所以在 DSH 里仍然要按本文手写这一行。
 
@@ -172,9 +172,9 @@ id 覆盖写法（**装了插件包时用这个**，不会改到仓库文件）�
 
 **路径含空格**：在 YAML 单引号字符串里直接写整串即可，例如 `'D:\Program Files\your\tia\TiaMcpServer.exe'`（注意本包内示例均用占位路径，真机路径只写在 home patch 里）。
 
-## 能写梯形图吗（LAD / 梯形图）—— 能，而且是**文本**写法
+## 能写梯形图吗（LAD/梯形图）
 
-**不要手写 SimaticML FlgNet XML。** 这是后端写死的规则，`GetAuthoringGuide('lad')` 原文：
+**能——而且是文本写法。** 但也**不要手写 SimaticML FlgNet XML**：这是后端写死的规则，`GetAuthoringGuide('lad')` 原文：
 
 > NEVER hand-write FlgNet XML for ladder logic — UId bookkeeping and entity escaping make it fail constantly.
 
