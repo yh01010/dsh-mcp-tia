@@ -16,18 +16,6 @@
 
 底层使用 DSH 宿主自带的 `@deepseek-ai/dsh-mcp-client`，本插件只是提供一份配置（`cordis.patch.yml`）。
 
-## 与 dsh-mcp-matlab 的关系
-
-两者**结构完全同构**：都是往 profile 里插一行 `@deepseek-ai/dsh-mcp-client`，占位路径放包里、真机路径放 `$DSH_HOME/cordis.patch.yml` 覆盖。
-
-唯一的实质差别：
-
-| | dsh-mcp-matlab | dsh-mcp-tia |
-| --- | --- | --- |
-| MCP Server 从哪来 | **MathWorks 官方**发布 `matlab-mcp-server-windows-x64.exe`，下载即可 | **西门子没有官方 MCP Server**，必须用社区项目（或自己写一个 Openness 包装） |
-| 后端选择 | 只有一个 | 三选一，能力/工具数/版本支持都不同（见下） |
-| 前置条件 | 装好 MATLAB 即可 | 还要处理 Windows 用户组与博途侧 Openness 访问开关 |
-
 ## 前置条件（必须先准备好）
 
 1. **Windows**——Openness 只有 Windows 实现，别的系统没有替代。
