@@ -41,7 +41,9 @@
 | --- | --- | --- | --- |
 | [heilingbrunner/tiaportal-mcp](https://github.com/heilingbrunner/tiaportal-mcp) | V21 默认，旧版靠参数 | 65 只读 + **49 写**（写工具要 `--allow-write` 才注册） | `command`: `…\TiaMcpServer.exe`；`args`: `--tia-major-version 21`，可选 `--project-path`、`--software-path`、`--export-path`、`--preserve-path`、`--with-dependencies`、`--allow-write`。自检：`TiaMcpServer.exe --doctor` |
 | [Czarnak/tia-portal-mcp](https://github.com/Czarnak/tia-portal-mcp)（NuGet `TiaMcpServer`） | **仅 V21** | 7 只读 / **17 读写** | `command`: `tia-mcp`（`dotnet tool install -g TiaMcpServer` 装出来的全局工具）；`args`: `--access-mode read-write`（默认只读）或 `full`。自检：`tia-mcp doctor` |
-| [bulaofen0036-coder/TIA_Portal_Openness_MCP](https://github.com/bulaofen0036-coder/TIA_Portal_Openness_MCP) | **V20 + V21**（两个独立 exe） | 224（默认只暴露 62，其余用 `FindTools` + `CallTool` 按需展开） | `command`: V21 用 `…\bin\Release\net48\TiaMcpServer.exe`，V20 用 `…\bin-v20\Release\net48\TiaMcpServer.exe`；`args`: `--tia-major-version 21`，非默认安装加 `--tia-portal-location "<Portal 根目录>"`。自检：`tia.cmd doctor` |
+| [bulaofen0036-coder/TIA_Portal_Openness_MCP](https://github.com/bulaofen0036-coder/TIA_Portal_Openness_MCP) | **V20 + V21**（交付包内有 `runtime\v20` 与 `runtime\v21` 两个运行时） | 238（2.7.11；默认精简档 65，其余用 `FindTools` + `CallTool` 按需展开） | `command`: V21 用 `…\runtime\v21\TiaMcpServer.exe`，V20 用 `…\runtime\v20\TiaMcpServer.exe`（Release zip 解压后跑 `配置MCP.bat` 生成配置）；`args`: `--tia-major-version 21`，非默认安装加 `--tia-portal-location "<Portal 根目录>"`；只读加 `--read-only`（≥2.7.11）。自检命令以该后端 README 为准 |
+
+> 工具数是各后端 README 的记录值，会随版本变化——**以连接后实际枚举为准**（本机实测：bulaofen 2.7.5 默认档 62 个、2.7.11 精简档 65 个）。
 
 选择建议：
 
@@ -49,7 +51,8 @@
 - **只要小而安全的工具面** → Czarnak（工具最少、写操作有 `dryRun` 与内容哈希守卫、带审计日志），但只支持 V21。
 - **想少编译、拿现成 exe** → bulaofen 的 Release 包里是预编译运行时；它的 `配置MCP.bat` 只认 Claude/Cursor/VS Code，**不认 DSH**，所以在 DSH 里仍然要按本文手写这一行。
 
-> 博途工程是二进制，Openness 的写入**只在内存生效**，必须再调保存类工具才落盘；下载到 PLC/在线模式不属于 Openness 的自动化范围，仍需人工。
+> 博途工程是二进制，Openness 的写入**只在内存生效**，必须再调保存类工具才落盘。
+> ⚠️ **在线能力默认就在工具面里**：bulaofen 后端的默认精简档就包含 `DownloadToPlc`、`GoOnline`/`GoOffline`、`SetWatchTableModifyValue`（其中 `SetWatchTableModifyValue` 会写真实 CPU），能直接作用到真实设备。升级到后端 2.7.11 后可用 `--read-only`（或环境变量 `TIA_MCP_READ_ONLY=1`）强制拒绝改工程/编译/保存/下载/写在线值；**不加该参数时不存在任何强制拦截**。
 
 ## 安装
 
@@ -65,7 +68,7 @@ dsh plugin --profile desktop add github:yh01010/dsh-mcp-tia
 
 ## 安装后还需要三步
 
-1. **拿到一个后端可执行文件**（上表任选一个），放到固定目录，例如 `%USERPROFILE%\.local\bin\`。多数后端要求先编译一次，或用它的 Release 预编译包。
+1. **拿到一个后端可执行文件**（上表任选一个）。注意 bulaofen 是**目录形态**的交付包：exe 在 `runtime\v21\` 里，旁边有它的运行时文件，**整包**解压到固定位置即可（例如 `%USERPROFILE%\.local\TIA_Portal_Openness_MCP\`），别只把那一个 exe 搬走；只有 heilingbrunner 那种单 exe 后端才适合随手放到 `%USERPROFILE%\.local\bin\`。多数后端要求先编译一次，或用它的 Release 预编译包。
 2. **确认环境**：用后端自带的 `doctor` 自检 .NET Framework、Openness DLL、`Siemens TIA Openness` 组成员身份与博途访问开关。**先跑 doctor，再谈接线**。
 3. **填真实路径并重启**：按 [配置](#配置) 一节在 `$DSH_HOME/cordis.patch.yml` 里覆盖 `command`，重启 DSH，工具列表里应出现 `mcp__tia__*`。
 
@@ -116,6 +119,20 @@ cordis.patch.yml 里还是占位路径。
 > [!WARNING]
 > 插件包已装、又在 home patch 里 `insert` 同一 id 的行 → 会得到**两行同 id** → 两个 mcp-client 实例抢 `serverName: tia` → DSH 启动时报 `serverName "tia" is already in use by another mcp-client instance` 并中止。这是最容易踩的坑。
 
+### 只读 / 写入参数（不要混用）
+
+三个后端的开关语义相反，参数不能互相照抄：
+
+| 后端 | 默认档 | 强制只读 | 启用写入 |
+| --- | --- | --- | --- |
+| bulaofen0036-coder **≥2.7.11** | 可写 | `--read-only`（等价环境变量 `TIA_MCP_READ_ONLY=1`） | 不加（默认就能写） |
+| heilingbrunner | 只读 | 不加 `--allow-write`（写工具根本不注册） | `--allow-write` |
+| Czarnak | 只读 | 省略 `--access-mode` | `--access-mode read-write` |
+
+本包模板的 `--tia-major-version` 是 bulaofen / heilingbrunner 共用的；`--allow-write` **只属于 heilingbrunner**，加到 bulaofen 上不会生效。另外 `lite`/`full` 档只决定**列出哪些工具**，不是写保护——真正的写保护是 `--read-only`。
+
+> 本机实测（2.7.11 + `--read-only`）：MCP 握手报 `2.7.11.0`，`tools/list` 列出 **65** 个工具；`Bootstrap` 正常返回 `ready: true`（`opennessGroupOk: true`、`tiaVersionInUse: 21`）；`SaveProject`、`CompileSoftware`、`DeletePlcBlock` 全部返回 `isError: true`，原文 `READ-ONLY MODE: '<工具名>' was refused because it is not on the read-only list (...). Nothing was executed.` 想核对你的实例是否真的只读，直接调一次 `SaveProject` 看这句即可。
+
 id 覆盖写法（**装了插件包时用这个**，不会改到仓库文件）：
 
 ```yaml
@@ -129,8 +146,8 @@ id 覆盖写法（**装了插件包时用这个**，不会改到仓库文件）�
     args:
       - '--tia-major-version'
       - '21'
-      # 确认只读可用后再加：
-      # - '--allow-write'
+      # bulaofen ≥2.7.11：加这一段 = 强制只读（见上表）
+      # - '--read-only'
     toolCallTimeoutMs: 180000
     failOnStartupError: false
 ```
@@ -160,15 +177,17 @@ id 覆盖写法（**装了插件包时用这个**，不会改到仓库文件）�
 
 关键配置项：
 
-| 字段 | 含义 | 默认 |
+| 字段 | 含义 | 宿主默认 |
 | --- | --- | --- |
 | `command` | 后端可执行文件 | 占位符（必填） |
 | `serverName` | 工具名前缀，profile 内须唯一 | `tia` |
 | `args` | 后端自己的命令行参数（各后端不同） | `--tia-major-version 21` |
 | `toolCallTimeoutMs` | 单次工具调用超时（ms）。**博途冷启动、编译、批量导入都可能超过 60 秒**，故调大 | 60000 |
 | `failOnStartupError` | 启动失败时立即抛错，而不是静默缺少工具。**开启会让 DSH 起不来**（每次启动都中止），只在路径已验证后再开 | false |
-| `reconnect` | 断线重连策略 | 关闭 |
+| `reconnect` | 断线重连策略。**默认就是开启的**：500ms 起、指数退避到 30s、最多 10 次 | `{ enabled: true, initialDelayMs: 500, maxDelayMs: 30000, maxAttempts: 10 }` |
 | `env` / `cwd` | 传给后端进程的环境变量 / 工作目录 | 空 |
+
+> 第三列是**宿主**（`@deepseek-ai/dsh-mcp-client`）的默认值。本仓库 `cordis.patch.yml` 模板在此之上把 `toolCallTimeoutMs` 覆盖成 **180000**（给编译/批量导入留余量）；你自己 home patch 里写多少以你为准（作者本机实际用 300000）。
 
 **路径含空格**：在 YAML 单引号字符串里直接写整串即可，例如 `'D:\Program Files\your\tia\TiaMcpServer.exe'`（注意本包内示例均用占位路径，真机路径只写在 home patch 里）。
 
@@ -253,8 +272,9 @@ END_FUNCTION
 2. 若没有，先手动确认后端 exe 存在、且能独立启动并自检：
 
    ```powershell
-   Test-Path 'C:\Users\<你的用户名>\.local\bin\TiaMcpServer.exe'
-   & 'C:\Users\<你的用户名>\.local\bin\TiaMcpServer.exe' --doctor
+   # 路径换成你选定后端的 exe；bulaofen 交付包是 <解压目录>\runtime\v21\TiaMcpServer.exe
+   Test-Path '<你选定后端的 exe 完整路径>'
+   & '<你选定后端的 exe 完整路径>' --doctor   # 该后端没有 doctor 的话，按它的 README 换成对应自检命令
    ```
 
    后端能独立启动但工具仍不出现，说明问题在 DSH 接线（patch/配置），不在后端。
@@ -271,17 +291,17 @@ END_FUNCTION
 | 工具调用超时 | 博途冷启动/编译/批量导入超过 `toolCallTimeoutMs`（调大它；部分后端另有"预热"脚本可让后续调用快很多） |
 | 导出的块报"不一致"错误 | 博途拒绝导出未编译通过的块。先编译，再导出 |
 | 写入"成功"但工程没变 | Openness 的修改只在内存，**必须调用保存类工具**才落盘 |
-| 工具太多、模型被淹没 | 选默认只暴露少量工具的后端（Czarnak 17 / bulaofen 默认 62 / heilingbrunner 只读 65），或在后端参数里限制工具面 |
+| 工具太多、模型被淹没 | 选默认只暴露少量工具的后端（Czarnak 17 / bulaofen 精简档 62–65 / heilingbrunner 只读 65），或在后端参数里限制工具面 |
 
 ## 安全提醒
 
-以下操作**必须人工确认**后再执行，且先备份工程：
+以下操作**必须人工确认**后再执行，且先备份工程。注意：这段是**操作要求**，不是已经生效的机制——本插件是纯配置桥接，DSH 侧不会按 MCP 注解自动拦写入，唯一的强制手段是后端的 `--read-only`（见上文「只读 / 写入参数」表）。
 
 - 写入任何东西到生产工程（先只读跑通，再开写模式）
 - 修改硬件地址、网络参数、通信设置
 - 删除设备、块、变量表、库
 - 修改安全相关对象或 Know-how 保护对象
-- 下载到 PLC/HMI、进入在线模式——**不属于本插件范围**，也不在 Openness 的自动化能力里
+- 下载到 PLC/HMI、进入在线模式——**这些默认就在工具面里**（`DownloadToPlc`、`GoOnline`/`GoOffline`、`SetWatchTableModifyValue`），插件层没有审批拦截：要么用后端 `--read-only` 强制只读，要么你本人全程盯场
 
 推荐在 **PLCSIM**（S7-PLCSIM / PLCSIM Advanced）的离线工程上先验证整条链路。
 
