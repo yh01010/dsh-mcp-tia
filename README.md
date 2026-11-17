@@ -35,21 +35,24 @@
 
 ## 后端怎么选
 
-三个维护中的开源后端，都能被这一个插件接进来（只换 `command`/`args`）：
+社区里有三个维护中的开源后端，都能被这一个插件接进来（只换 `command`/`args`）。
+
+**本文的主路径是 [bulaofen0036-coder/TIA_Portal_Openness_MCP](https://github.com/bulaofen0036-coder/TIA_Portal_Openness_MCP) 2.7.x**：下面的配置、验证、排障和 LAD 教程都按它写，并在本机 V21 + 2.7.11 上实测过。另外两个后端只作**参考**——它们的参数语义不同（尤其是写模式开关），**不要照抄本文的命令行**，按各自 README 改。
 
 | 后端 | 支持版本 | 工具数 | `command` / `args` 要点 |
 | --- | --- | --- | --- |
-| [heilingbrunner/tiaportal-mcp](https://github.com/heilingbrunner/tiaportal-mcp) | V21 默认，旧版靠参数 | 65 只读 + **49 写**（写工具要 `--allow-write` 才注册） | `command`: `…\TiaMcpServer.exe`；`args`: `--tia-major-version 21`，可选 `--project-path`、`--software-path`、`--export-path`、`--preserve-path`、`--with-dependencies`、`--allow-write`。自检：`TiaMcpServer.exe --doctor` |
-| [Czarnak/tia-portal-mcp](https://github.com/Czarnak/tia-portal-mcp)（NuGet `TiaMcpServer`） | **仅 V21** | 7 只读 / **17 读写** | `command`: `tia-mcp`（`dotnet tool install -g TiaMcpServer` 装出来的全局工具）；`args`: `--access-mode read-write`（默认只读）或 `full`。自检：`tia-mcp doctor` |
-| [bulaofen0036-coder/TIA_Portal_Openness_MCP](https://github.com/bulaofen0036-coder/TIA_Portal_Openness_MCP) | **V20 + V21**（交付包内有 `runtime\v20` 与 `runtime\v21` 两个运行时） | 238（2.7.11；默认精简档 65，其余用 `FindTools` + `CallTool` 按需展开） | `command`: V21 用 `…\runtime\v21\TiaMcpServer.exe`，V20 用 `…\runtime\v20\TiaMcpServer.exe`（Release zip 解压后跑 `配置MCP.bat` 生成配置）；`args`: `--tia-major-version 21`，非默认安装加 `--tia-portal-location "<Portal 根目录>"`；只读加 `--read-only`（≥2.7.11）。自检命令以该后端 README 为准 |
+| **bulaofen0036-coder/TIA_Portal_Openness_MCP**（主路径） | **V20 + V21**（交付包内有 `runtime\v20` 与 `runtime\v21` 两个运行时） | 238（2.7.11；默认精简档 65，其余用 `FindTools` + `CallTool` 按需展开） | `command`: V21 用 `…\runtime\v21\TiaMcpServer.exe`，V20 用 `…\runtime\v20\TiaMcpServer.exe`（Release zip 解压后跑 `配置MCP.bat` 生成配置）；`args`: `--tia-major-version 21`，非默认安装加 `--tia-portal-location "<Portal 根目录>"`；只读加 `--read-only`（≥2.7.11）。自检命令以该后端 README 为准 |
+| [heilingbrunner/tiaportal-mcp](https://github.com/heilingbrunner/tiaportal-mcp)（参考） | V21 默认，旧版靠参数 | 65 只读 + **49 写**（写工具要 `--allow-write` 才注册） | `command`: `…\TiaMcpServer.exe`；`args`: `--tia-major-version 21`，可选 `--project-path`、`--software-path`、`--export-path`、`--preserve-path`、`--with-dependencies`、`--allow-write`。自检：`TiaMcpServer.exe --doctor` |
+| [Czarnak/tia-portal-mcp](https://github.com/Czarnak/tia-portal-mcp)（参考，NuGet `TiaMcpServer`） | **仅 V21** | 7 只读 / **17 读写** | `command`: `tia-mcp`（`dotnet tool install -g TiaMcpServer` 装出来的全局工具）；`args`: `--access-mode read-write`（默认只读）或 `full`。自检：`tia-mcp doctor` |
 
 > 工具数是各后端 README 的记录值，会随版本变化——**以连接后实际枚举为准**（本机实测：bulaofen 2.7.5 默认档 62 个、2.7.11 精简档 65 个）。
 
 选择建议：
 
-- **要写 SCL/LAD 代码**（本插件的主要用途）→ heilingbrunner（能读写真·文本格式，见 [能写梯形图吗](#能写梯形图吗lad梯形图)）或 bulaofen（自带 SCL/LAD 指令库与模板，中文文档）。
+- **默认就走 bulaofen**（主路径）：预编译运行时开箱可用、自带 SCL/LAD 指令库与中文文档、默认精简档工具面可控，还能用 `--read-only` 强制只读。
+- **要写 SCL/LAD 代码**：bulaofen 的 S7DCL 文本导入是首选（见 [能写梯形图吗](#能写梯形图吗lad梯形图)）；heilingbrunner 也能读写文本格式，可作为对照。
 - **只要小而安全的工具面** → Czarnak（工具最少、写操作有 `dryRun` 与内容哈希守卫、带审计日志），但只支持 V21。
-- **想少编译、拿现成 exe** → bulaofen 的 Release 包里是预编译运行时；它的 `配置MCP.bat` 只认 Claude/Cursor/VS Code，**不认 DSH**，所以在 DSH 里仍然要按本文手写这一行。
+- 另外：bulaofen 的 `配置MCP.bat` 只认 Claude/Cursor/VS Code，**不认 DSH**，所以在 DSH 里仍然要按本文手写这一行。
 
 > 博途工程是二进制，Openness 的写入**只在内存生效**，必须再调保存类工具才落盘。
 > ⚠️ **在线能力默认就在工具面里**：bulaofen 后端的默认精简档就包含 `DownloadToPlc`、`GoOnline`/`GoOffline`、`SetWatchTableModifyValue`（其中 `SetWatchTableModifyValue` 会写真实 CPU），能直接作用到真实设备。升级到后端 2.7.11 后可用 `--read-only`（或环境变量 `TIA_MCP_READ_ONLY=1`）强制拒绝改工程/编译/保存/下载/写在线值；**不加该参数时不存在任何强制拦截**。
@@ -193,6 +196,8 @@ id 覆盖写法（**装了插件包时用这个**，不会改到仓库文件）�
 
 ## 能写梯形图吗（LAD/梯形图）
 
+> **适用后端：bulaofen 2.7.x**（本文实测版本）。本节出现的 `GetAuthoringGuide`、`ImportFromDocuments`、`DescribeBlockLogic`、`ExportAsDocuments`、`BuildFlgNetCallXml` 都是该后端的工具名；换用 heilingbrunner 或 Czarnak 时工具名和可用语法不同，见本节末的「各后端的 LAD 路径」表，别照抄。
+
 **能——而且是文本写法。** 但也**不要手写 SimaticML FlgNet XML**：这是后端写死的规则，`GetAuthoringGuide('lad')` 原文：
 
 > NEVER hand-write FlgNet XML for ladder logic — UId bookkeeping and entity escaping make it fail constantly.
@@ -266,20 +271,46 @@ END_FUNCTION
 | heilingbrunner | `ImportXmlBlock` 导 LAD XML；或 V20+ 的 `.s7dcl/.s7res` | 单 exe；文档记录了 `.s7res` 必须对**所有条目**有 en-US 标签、否则可能失败的 Openness 已知问题 |
 | Czarnak | 只能 XML（`format=source` 仅对 SCL 语言块、DB、UDT 可用） | 工具少、守卫严 |
 
-## 安装后验证
+## 安装后验证：五层定位
 
-1. 重启 DSH 后，看工具列表里是否出现 `mcp__tia__*`。
-2. 若没有，先手动确认后端 exe 存在、且能独立启动并自检：
+工具没出现、或出现了但调用失败，**从下往上逐层查**，每一层都能单独判定成败，不要凭猜改配置：
 
-   ```powershell
-   # 路径换成你选定后端的 exe；bulaofen 交付包是 <解压目录>\runtime\v21\TiaMcpServer.exe
-   Test-Path '<你选定后端的 exe 完整路径>'
-   & '<你选定后端的 exe 完整路径>' --doctor   # 该后端没有 doctor 的话，按它的 README 换成对应自检命令
-   ```
+| 层 | 查什么 | 怎么查 | 这一层失败意味着 |
+| --- | --- | --- | --- |
+| 1 路径 | `command` 的 exe 是否真的存在 | 下方 `Test-Path` | 占位符没换/路径写错。bulaofen 是目录形态交付包，别只搬走 exe |
+| 2 进程 | DSH 有没有把后端拉起来 | `Get-Process -Name TiaMcpServer -ErrorAction SilentlyContinue`（Czarnak 是 `tia-mcp`） | 没有进程：patch 没生效、id 写错，或后端启动即崩（缺 .NET 4.8 等） |
+| 3 握手 | 与 DSH 的 MCP `initialize` 是否成功 | DSH 日志里该 server 的连接记录；或跑后端 `--doctor` / `Bootstrap` 看它能不能自己起来 | TIA 这一层最常见的原因是 **Openness 组权限/重登** 或博途侧没允许访问 |
+| 4 枚举 | `tools/list` 返回几个工具 | 数工具列表里的 `mcp__tia__*`（bulaofen 2.7.11 精简档应为 **65 个**，见 [后端怎么选](#后端怎么选)） | 0 个 = 第 3 层就没通；数量不对 = 后端版本/档位不同 |
+| 5 最小调用 | 只读工具能跑吗 | 先调只读的（列设备、列块、导出块），确认 AI 看到的工程结构和你在博途里看到的一致 | 权限错看第 3 层；「写入成功但工程没变」是没调保存类工具 |
 
-   后端能独立启动但工具仍不出现，说明问题在 DSH 接线（patch/配置），不在后端。
-3. 接上后**先只做只读**：列设备、列块、导出块，确认 AI 看到的工程结构和你的一致，再考虑开写模式。
-4. 装了 [`dsh-mcp-panel`](https://github.com/PerryLink/dsh-mcp-panel) 的话，可以在设置页看这个 MCP 的连接状态、已注册工具、错误与重连计数。
+第 1、3 层的命令：
+
+```powershell
+# 路径换成你选定后端的 exe；bulaofen 交付包是 <解压目录>\runtime\v21\TiaMcpServer.exe
+Test-Path '<你选定后端的 exe 完整路径>'
+& '<你选定后端的 exe 完整路径>' --doctor   # 该后端没有 doctor 的话，按它的 README 换成对应自检命令
+```
+
+后端能独立启动但工具仍不出现，说明问题在 DSH 接线（patch/配置），不在后端。
+
+接上后**先只做只读**：列设备、列块、导出块，确认 AI 看到的工程结构和你的一致，再考虑开写模式。
+
+装了 [`dsh-mcp-panel`](https://github.com/PerryLink/dsh-mcp-panel) 的话，可以在设置页看这个 MCP 的连接状态、已注册工具、错误与重连计数。
+
+## 兼容性
+
+四条独立的版本轴：**TIA Portal 主版本**、**后端版本**、**.NET**、**DSH 版本**。本插件与版本无关——它不检查版本，只把参数透传给后端。
+
+| 项目 | 上游声明 | 本机已实测 | 未验证 |
+| --- | --- | --- | --- |
+| TIA Portal | 各后端不一：Czarnak 仅 V21，bulaofen 覆盖 V20+V21，heilingbrunner 默认 V21 | **V21**（Portal V21 + 模块化 Openness DLL） | V20（bulaofen 有 `runtime\v20` 但未在本机跑过）、V15–V19 |
+| 后端 | bulaofen 最新 v2.7.11（工具面 238 / 精简档 65） | **bulaofen 2.7.11**（`TiaMcpServer 2.7.11.0`） | heilingbrunner、Czarnak 均未在本机实测 |
+| .NET Framework | Openness API 要求 4.8 | **4.8.1**（注册表 `Release` = 533320，程序集 4.8.09032，Windows 11 自带） | .NET Core/5+ 自包含模式 |
+| DSH | 宿主 `@deepseek-ai/dsh-mcp-client` 无版本门槛 | 0.2.2-rc.3（`@deepseek-ai/dsh-desktop-runtime`） | 更早/更新的 DSH |
+
+验证日期 **2026-11-15**，单机实测环境：Windows 11 家庭中文版（10.0.22631）+ 上表版本。
+
+已验证组合：TIA Portal V21 + bulaofen 2.7.11（`--read-only`）——MCP 握手报 `2.7.11.0`，`tools/list` **65 个**，`Bootstrap` 返回 `ready: true` / `opennessGroupOk: true` / `tiaVersionInUse: 21`；`SaveProject`、`DeleteDevice` 等写工具全部被 `READ-ONLY MODE` 拒绝。
 
 ## 排障
 
@@ -312,6 +343,24 @@ dsh plugin --profile desktop remove dsh-mcp-tia
 ```
 
 （或从 `dsh.profile.bundles` 移除后 `pnpm install`），重启生效。想临时停用，可在 profile 的 `cordis.patch.yml` 里给 `mcp-tia` 行加 `disabled: true`。
+
+## 本地检查
+
+仓库自带结构校验，不靠字符串匹配（需要 Node 20+，唯一依赖是 `yaml`）：
+
+```sh
+npm ci
+npm run validate   # 解析 cordis.patch.yml，逐项检查 id/name/config 字段
+npm test           # 5 个用例：正常 / 全注释 / YAML 损坏 / command 为空 / 重复 id
+```
+
+改完 home patch 想先自检，可以直接校验单文件：
+
+```sh
+node validate.mjs --patch "$env:USERPROFILE\.dsh\cordis.patch.yml"
+```
+
+CI（`.github/workflows/validate.yml`）在每次 push 和 PR 跑同样的两条命令，YAML 语法错误或结构错误会让 CI 变红。
 
 ## 许可证
 

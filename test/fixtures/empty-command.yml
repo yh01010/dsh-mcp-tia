@@ -1,0 +1,9 @@
+- id: mcp-tia
+  name: '@deepseek-ai/dsh-mcp-client'
+  config:
+    serverName: tia
+    transport: stdio
+    command: ''
+    args:
+      - '--tia-major-version'
+      - '21'

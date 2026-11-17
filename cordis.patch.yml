@@ -37,6 +37,11 @@
 #                         Czarnak/tia-portal-mcp instead, the command is the
 #                         `tia-mcp` global tool and the flag is
 #                         `--access-mode read-write` (or `full`).
+#                         `--read-only` is bulaofen-only and needs >= 2.7.11:
+#                         it refuses project changes, compile, save, download and
+#                         online writes (`TIA_MCP_READ_ONLY=1` is equivalent).
+#                         Drop it for the other two backends, and drop it while
+#                         you still have writes to do.
 #   env:                  extra environment for the server process
 #   cwd:                  working directory (default "")
 #   toolCallTimeoutMs:    per-tool-call timeout, ms. A TIA Portal cold start, a
@@ -55,9 +60,13 @@
       config:
         serverName: tia
         transport: stdio
-        command: 'C:\path\to\your\TiaMcpServer.exe'
+        command: 'C:\path\to\TIA_MCP_Delivery_v2.7.11\runtime\v21\TiaMcpServer.exe'
         args:
           - '--tia-major-version'
           - '21'
+          # bulaofen >= 2.7.11 only; see the note above. Without it the online
+          # write tools (DownloadToPlc / SetWatchTableModifyValue / ...) are
+          # live and nothing in DSH intercepts them.
+          - '--read-only'
         toolCallTimeoutMs: 180000
         failOnStartupError: false

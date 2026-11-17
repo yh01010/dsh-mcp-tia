@@ -1,6 +1,6 @@
 {
   "name": "dsh-mcp-tia",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "DSH plugin: bridge to a Siemens TIA Portal MCP server (TIA Portal Openness)",
   "keywords": [
     "dsh",
@@ -21,5 +21,12 @@
       "patch": "./cordis.patch.yml"
     }
   },
-  "private": true
+  "private": true,
+  "scripts": {
+    "validate": "node validate.mjs",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "yaml": "^2.9.1"
+  }
 }

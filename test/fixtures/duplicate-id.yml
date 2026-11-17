@@ -1,0 +1,13 @@
+- id: mcp-tia
+  name: '@deepseek-ai/dsh-mcp-client'
+  config:
+    serverName: tia
+    transport: stdio
+    command: 'C:\path\to\TiaMcpServer.exe'
+
+- id: mcp-tia
+  name: '@deepseek-ai/dsh-mcp-client'
+  config:
+    serverName: tia-readonly
+    transport: stdio
+    command: 'C:\path\to\TiaMcpServer.exe'

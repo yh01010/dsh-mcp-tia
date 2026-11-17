@@ -1,0 +1,19 @@
+- id: mcp-tia
+  name: '@deepseek-ai/dsh-mcp-client'
+  config:
+    serverName: tia
+    transport: stdio
+    command: 'C:\path\to\TiaMcpServer.exe'
+    args:
+      - '--tia-major-version'
+      - '21'
+    toolCallTimeoutMs: 180000
+    failOnStartupError: false
+
+- insert:
+    - id: mcp-extra
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: extra
+        transport: stdio
+        command: 'C:\path\to\other-server.exe'
